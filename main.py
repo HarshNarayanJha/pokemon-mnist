@@ -24,6 +24,8 @@ from sklearn.preprocessing import LabelEncoder
 """
 
 # %%
+# read data
+
 data = pd.read_csv("data/pokedex.csv")
 print(data.head())
 print(data.columns)
@@ -36,7 +38,7 @@ cleaned_data = data.rename({"Index": "ID", "Type 1": "Type"}, axis=1)
 cleaned_data = cleaned_data[["Image", "ID", "Name", "Type"]]
 
 # %%
-# Let's check on any random pokemon
+# Let's check on random pokemons if they look right
 
 fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(10, 10))
 
@@ -73,6 +75,8 @@ cleaned_data["Type"].value_counts().plot(kind="bar")
 """
 The most common type is the Water Type
 The least is Flying
+
+This will cause problems with training
 """
 # %%
 class_names = cleaned_data["Type"].unique()
@@ -109,7 +113,8 @@ print(model_data.sample())
 print(model_data.info())
 
 # %%
-# Let's again check on any random pokemon
+# Let's again check on random pokemons
+
 fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(10, 10))
 
 for i in range(3):
@@ -125,6 +130,9 @@ for i in range(3):
         axes[i, j].set_title(f"{pkmn.iloc[0]['Name']} ({ll.inverse_transform([pkmn.iloc[0]['Type']])})")
 
 plt.show()
+# %% [markdown]
+# ## Train, Test, Val Split
+
 # %%
 # print(model_data.head())
 print(model_data.columns)
@@ -190,6 +198,10 @@ axs.figure.set_size_inches(18, 18)
 
 plt.show()
 
+# %%
+# Save the Model
+model.save("pokemon_mnist.keras")
+model.save_weights("pokemon_mnist.weights.h5")
 
 # %% Custom Image Test
 def preprocess_custom_image(image_path):
@@ -206,14 +218,14 @@ def preprocess_custom_image(image_path):
 
 sprites = np.array(
     [
-        preprocess_custom_image("psyduck.png"),
-        preprocess_custom_image("golduck.png"),
-        preprocess_custom_image("makuhita.png"),
-        preprocess_custom_image("marshadow.webp"),
-        preprocess_custom_image("shiftry.webp"),
-        preprocess_custom_image("moltres.webp"),
-        preprocess_custom_image("braviary.webp"),
-        preprocess_custom_image("tepig.webp"),
+        preprocess_custom_image("test/psyduck.png"),
+        preprocess_custom_image("test/golduck.png"),
+        preprocess_custom_image("test/makuhita.png"),
+        preprocess_custom_image("test/marshadow.webp"),
+        preprocess_custom_image("test/shiftry.webp"),
+        preprocess_custom_image("test/moltres.webp"),
+        preprocess_custom_image("test/braviary.webp"),
+        preprocess_custom_image("test/tepig.webp"),
     ]
 )
 
