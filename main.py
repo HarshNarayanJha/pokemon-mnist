@@ -4,11 +4,16 @@
 """
 
 # %%
+import os
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 import keras
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
+import tensorflow as tf
 from PIL import Image
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -88,7 +93,7 @@ def preprocess_image(path: str):
     with Image.open(pth) as img:
         data = np.array(img)
 
-    return data
+    return data / 255
 
 
 model_data = cleaned_data.copy()
@@ -101,6 +106,8 @@ ll = LabelEncoder()
 model_data["Type"] = ll.fit_transform(model_data["Type"])
 
 print(model_data.sample())
+print(model_data.info())
+
 # %%
 # Let's again check on any random pokemon
 fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(10, 10))
@@ -111,20 +118,23 @@ for i in range(3):
         sprite = pkmn.iloc[0]["Image"]
 
         # print(sprite.shape)
-        axes[i, j].imshow(sprite, interpolation="nearest", cmap=plt.get_cmap("gray"))
-        axes[i, j].set_title(f"{pkmn.iloc[0]['Name']} ({pkmn.iloc[0]['Type']})")
+        axes[i, j].imshow(
+            sprite,
+            interpolation="nearest",
+        )
+        axes[i, j].set_title(f"{pkmn.iloc[0]['Name']} ({ll.inverse_transform([pkmn.iloc[0]['Type']])})")
 
 plt.show()
 # %%
-print(model_data.head())
+# print(model_data.head())
 print(model_data.columns)
 
-# %%
 # train test split
-X, y = cleaned_data["Image"], cleaned_data["Type"]
-X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.7, random_state=42)
+X, y = np.stack(model_data["Image"].values), model_data["Type"].values
+X_train_full, X_test, y_train_full, y_test = train_test_split(X, y, train_size=0.7, random_state=42)
+X_train, X_val, y_train, y_val = train_test_split(X_train_full, y_train_full, train_size=0.8, random_state=42)
 
-print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
+print(X_train.shape, X_test.shape, y_train.shape, y_test.shape, X_val.shape, y_val.shape)
 
 # %% [md]
 """
@@ -132,3 +142,106 @@ print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
 """
 
 # %%
+model = keras.models.Sequential()
+model.add(keras.layers.Input(shape=(112, 120, 4)))
+model.add(keras.layers.Flatten())
+model.add(keras.layers.Dense(200, activation="relu"))
+model.add(keras.layers.Dense(100, activation="relu"))
+model.add(keras.layers.Dense(18, activation="softmax"))
+
+# %%
+model.summary()
+
+# %%
+model.layers
+
+# %%
+model.compile(loss="sparse_categorical_crossentropy", optimizer="sgd", metrics=["accuracy"])
+
+# %%
+history: keras.callbacks.History = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=10, batch_size=32)
+
+# %%
+pd.DataFrame(history.history).plot(figsize=(15, 8))
+plt.grid(True)
+plt.gca().set_ylim(0, 1)
+plt.show()
+
+# %%
+model.evaluate(X_test, y_test)
+
+# %%
+y_prob: np.ndarray = model.predict(X_test)
+y_classes = y_prob.argmax(axis=-1)
+print(y_classes)
+
+# %%
+confusion_matrix = tf.math.confusion_matrix(y_test, y_classes)
+
+# %%
+axs = sns.heatmap(confusion_matrix, annot=True, fmt="g", cmap="Blues")
+
+axs.set_xlabel("Predicted Labels")
+axs.set_ylabel("True Labels")
+axs.set_title("Confusion Matrix")
+axs.xaxis.set_ticklabels(class_names)
+axs.yaxis.set_ticklabels(class_names)
+axs.figure.set_size_inches(18, 18)
+
+plt.show()
+
+
+# %% Custom Image Test
+def preprocess_custom_image(image_path):
+    img = Image.open(image_path)
+    img = img.resize((120, 112))
+
+    img = img.convert("RGBA")
+
+    sprite = np.array(img)
+    img.close()
+
+    return sprite / 255
+
+
+sprites = np.array(
+    [
+        preprocess_custom_image("psyduck.png"),
+        preprocess_custom_image("golduck.png"),
+        preprocess_custom_image("makuhita.png"),
+        preprocess_custom_image("marshadow.webp"),
+        preprocess_custom_image("shiftry.webp"),
+        preprocess_custom_image("moltres.webp"),
+        preprocess_custom_image("braviary.webp"),
+        preprocess_custom_image("tepig.webp"),
+    ]
+)
+
+sprites_t = tf.convert_to_tensor(sprites, dtype=tf.float32)
+
+pred = model.predict(sprites_t)
+predicted_classes = np.argmax(pred, axis=1)
+predicted_types = ll.inverse_transform(predicted_classes)
+
+# Visualize the test
+fig, axes = plt.subplots(nrows=len(sprites), ncols=2, figsize=(15, 15))
+
+for i, img in enumerate(sprites):
+    # plot image
+    axes[i, 0].imshow(img)
+    axes[i, 0].set_title(f"Predicted Type: {predicted_types[i]}")
+    axes[i, 0].axis("off")
+
+    # plot distribution
+    axes[i, 1].set_title("Probability distribution:\n")
+    prediction_prob = []
+    types = []
+    for type_name, prob in zip(ll.classes_, pred[i]):
+        prediction_prob.append(prob)
+        types.append(type_name)
+
+    axes[i, 1].bar(types, prediction_prob)
+    axes[i, 1].tick_params(axis="x", rotation=45)
+    axes[i, 1].set_ylim(0, 1)
+
+plt.show()
