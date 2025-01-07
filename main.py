@@ -5,6 +5,7 @@
 
 # %%
 import os
+import pickle
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
@@ -202,6 +203,8 @@ plt.show()
 # Save the Model
 model.save("pokemon_mnist.keras")
 model.save_weights("pokemon_mnist.weights.h5")
+with open("ll.pkl", 'wb') as fp:
+    pickle.dump(ll, fp)
 
 # %% Custom Image Test
 def preprocess_custom_image(image_path):
