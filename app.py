@@ -1,9 +1,10 @@
 import pickle
+
 import keras
 import numpy as np
-from sklearn.preprocessing import LabelEncoder
 import streamlit as st
 from PIL import Image
+from sklearn.preprocessing import LabelEncoder
 
 st.set_page_config(page_title="Pokemon Type Prediction using DL")
 
