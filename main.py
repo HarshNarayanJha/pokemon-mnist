@@ -82,6 +82,7 @@ This will cause problems with training
 # %%
 class_names = cleaned_data["Type"].unique()
 print(class_names)
+
 # %% [md]
 """
 ## Preprocessing
@@ -95,7 +96,7 @@ def preprocess_image(path: str):
     """
     pth = f"data/{path}"
     data = None
-    with Image.open(pth) as img:
+    with Image.open(pth).convert("RGBA") as img:
         data = np.array(img)
 
     return data / 255
@@ -153,10 +154,14 @@ print(X_train.shape, X_test.shape, y_train.shape, y_test.shape, X_val.shape, y_v
 # %%
 model = keras.models.Sequential()
 model.add(keras.layers.Input(shape=(112, 120, 4)))
+model.add(keras.layers.Conv2D(16, 3, activation="relu"))
+model.add(keras.layers.MaxPooling2D())
+model.add(keras.layers.Conv2D(32, 3, activation="relu"))
+model.add(keras.layers.MaxPooling2D())
+model.add(keras.layers.Dropout(0.5))
 model.add(keras.layers.Flatten())
-model.add(keras.layers.Dense(200, activation="relu"))
-model.add(keras.layers.Dense(100, activation="relu"))
-model.add(keras.layers.Dense(18, activation="softmax"))
+model.add(keras.layers.Dense(128, activation="relu"))
+model.add(keras.layers.Dense(18))
 
 # %%
 model.summary()
@@ -165,10 +170,16 @@ model.summary()
 model.layers
 
 # %%
-model.compile(loss="sparse_categorical_crossentropy", optimizer="sgd", metrics=["accuracy"])
+model.compile(loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True), optimizer="adam", metrics=["accuracy"])
 
 # %%
-history: keras.callbacks.History = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=10, batch_size=32)
+history: keras.callbacks.History = model.fit(
+    X_train,
+    y_train,
+    validation_data=(X_val, y_val),
+    epochs=10,
+    batch_size=32,
+)
 
 # %%
 pd.DataFrame(history.history).plot(figsize=(15, 8))
@@ -195,23 +206,24 @@ axs.set_ylabel("True Labels")
 axs.set_title("Confusion Matrix")
 axs.xaxis.set_ticklabels(class_names)
 axs.yaxis.set_ticklabels(class_names)
-axs.figure.set_size_inches(18, 18)
+plt.gcf().set_size_inches(18, 18)
 
 plt.show()
 
 # %%
 # Save the Model
-model.save("pokemon_mnist.keras")
-model.save_weights("pokemon_mnist.weights.h5")
-with open("ll.pkl", 'wb') as fp:
+model.save("pokemon_mnist_cnn.keras")
+model.save_weights("pokemon_mnist_cnn.weights.h5")
+with open("ll.pkl", "wb") as fp:
     pickle.dump(ll, fp)
+
 
 # %% Custom Image Test
 def preprocess_custom_image(image_path):
-    img = Image.open(image_path)
+    img = Image.open(image_path).convert("RGBA")
     img = img.resize((120, 112))
 
-    img = img.convert("RGBA")
+    # img = img.convert("RGB")
 
     sprite = np.array(img)
     img.close()
@@ -239,7 +251,7 @@ predicted_classes = np.argmax(pred, axis=1)
 predicted_types = ll.inverse_transform(predicted_classes)
 
 # Visualize the test
-fig, axes = plt.subplots(nrows=len(sprites), ncols=2, figsize=(15, 15))
+fig, axes = plt.subplots(nrows=len(sprites), ncols=2, figsize=(15, 25))
 
 for i, img in enumerate(sprites):
     # plot image
