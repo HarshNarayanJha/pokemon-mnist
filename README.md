@@ -117,7 +117,7 @@ After running the tests, we save the model.
 
 ## What can we do now
 
-A lot of things, like improving the model, adding more (and relavent) layers, and fine tuning certain parameters.
+A lot of things, like improving the model, adding more (and relevant) layers, and fine tuning certain parameters.
 I will keep updating the README as I update the model.
 
 ## Demo

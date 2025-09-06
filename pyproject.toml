@@ -1,0 +1,25 @@
+[project]
+name = "pokemon-mnist"
+version = "0.1.0"
+description = "MNIST, but for Pokemon Types"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "keras>=3.11.3",
+    "matplotlib>=3.10.6",
+    "numpy>=2.3.2",
+    "pandas>=2.3.2",
+    "pillow>=11.3.0",
+    "scikit-learn>=1.7.1",
+    "seaborn>=0.13.2",
+    "streamlit>=1.49.1",
+    "tensorflow>=2.20.0",
+]
+
+[tool.pyright]
+typeCheckingMode = "basic"
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.30.1",
+]

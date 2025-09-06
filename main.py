@@ -7,6 +7,8 @@
 import os
 import pickle
 
+from sklearn.utils import compute_class_weight
+
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 import keras
@@ -146,12 +148,18 @@ X_train, X_val, y_train, y_val = train_test_split(X_train_full, y_train_full, tr
 
 print(X_train.shape, X_test.shape, y_train.shape, y_test.shape, X_val.shape, y_val.shape)
 
+# %%
+class_weights = compute_class_weight("balanced", classes=np.unique(y_train), y=y_train)
+class_weights_dict = dict(enumerate(class_weights))
+print(class_weights_dict)
+
 # %% [md]
 """
 ### Enter Easy Neural Networks!
 """
 
 # %%
+
 model = keras.models.Sequential()
 model.add(keras.layers.Input(shape=(112, 120, 4)))
 model.add(keras.layers.Conv2D(16, 3, activation="relu"))
@@ -174,11 +182,7 @@ model.compile(loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
 
 # %%
 history: keras.callbacks.History = model.fit(
-    X_train,
-    y_train,
-    validation_data=(X_val, y_val),
-    epochs=10,
-    batch_size=32,
+    X_train, y_train, validation_data=(X_val, y_val), epochs=10, batch_size=32, class_weight=class_weights_dict
 )
 
 # %%

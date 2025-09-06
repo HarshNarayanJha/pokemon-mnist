@@ -8,19 +8,22 @@ from sklearn.preprocessing import LabelEncoder
 
 st.set_page_config(page_title="Pokemon Type Prediction using DL")
 
+
 @st.cache_resource
 def load_encoder() -> LabelEncoder:
-    with open("ll.pkl", 'rb') as fp:
+    with open("ll.pkl", "rb") as fp:
         ll = pickle.load(fp)
 
     return ll
 
+
 def to_types(preds):
     return load_encoder().inverse_transform(preds)
 
+
 @st.cache_resource
 def load_model() -> keras.Model:
-    model = keras.models.load_model("./pokemon_mnist.keras")
+    model = keras.models.load_model("./pokemon_mnist_cnn.keras")
     assert isinstance(model, keras.Model)
     return model
 
@@ -37,7 +40,6 @@ st.markdown("### Pick any pokemon image, we will recognize its type")
 pokemon_image = st.file_uploader("Pick any pokemon image")
 
 if pokemon_image:
-
     st.image(pokemon_image)
     with st.spinner(text="Thinking"):
         img = Image.open(pokemon_image)
