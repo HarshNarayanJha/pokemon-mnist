@@ -125,5 +125,5 @@ I will keep updating the README as I update the model.
 Use the included streamlit app to interact with the model.
 
 ```bash
-streamlit run app.py
+uv run streamlit run app.py
 ```
